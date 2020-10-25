@@ -46,7 +46,7 @@ EOF
 					echo "版本不支持，请手动安装"
 					exit
 				fi
-				apt install -y vim net-tools openssh-server ros-$ROS_Edition-desktop-full >/dev/null 2>&1
+				apt install -y vim net-tools curl wget openssh-server git ros-$ROS_Edition-desktop-full >/dev/null 2>&1
 				#SHELL_FOLDER=$(dirname $(readlink -f "$0"))
 				#user_test=$(sed "s:/: :g" $SHELL_FOLDER | awk '{print $2}')
 				user=$(cat /etc/passwd | grep "/bin/bash" | cut -d: -f1 | tail -1)
@@ -63,7 +63,7 @@ EOF
 				#fi
 			else
 				apt update >/dev/null 2>&1
-				apt install -y vim net-tools openssh-server >/dev/null 2>&1
+				apt install -y vim net-tools curl wget openssh-server git >/dev/null 2>&1
 				echo “配置完成”
 				exit
 			fi
