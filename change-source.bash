@@ -35,14 +35,23 @@ EOF
 				echo "deb https://mirrors.tuna.tsinghua.edu.cn/ros/ubuntu/ $ubuntu_edition main" > /etc/apt/sources.list.d/ros-latest.list
 				apt-key adv --keyserver 'hkp://keyserver.ubuntu.com:80' --recv-key C1CF6E31E6BADE8868B172B4F42ED6FBAB17C654 >/dev/null 2>&1
 				apt update >/dev/null 2>&1
-				apt install -y vim net-tools openssh-server ros-$ubuntu_edition-desktop-full >/dev/null 2>&1
+				if [ " $ubuntu_edition" = "xenial" ];then
+					ROS_Edition = “kinetic”
+				elif [ " $ubuntu_edition" = "bionic" ];then
+					ROS_Edition = “melodic”
+				elif [ " $ubuntu_edition" = "focal" ];the
+					ROS_Edition = “noetic”
+				else
+					echo "版本不支持，请手动安装"
+					exit
+				apt install -y vim net-tools openssh-server ros-$ROS_Edition-desktop-full >/dev/null 2>&1
 				#SHELL_FOLDER=$(dirname $(readlink -f "$0"))
 				#user_test=$(sed "s:/: :g" $SHELL_FOLDER | awk '{print $2}')
 				user=$(cat /etc/passwd | grep "/bin/bash" | cut -d: -f1 | tail -1)
 				#if [$user_test == $user ];then
 				mkdir -p /home/$user/catkin_ws/src;cd /home/$user/catkin_ws/src;catkin_init_workspace
 				cd /home/$user/catkin_ws;catkin_make >/dev/null 2>&1
-				echo "source /opt/ros/$ubuntu_edition/setup.bash" >> /home/$user/.bashrc
+				echo "source /opt/ros/$ROS_Edition/setup.bash" >> /home/$user/.bashrc
 				echo "source /home/$user/catkin_ws/devel/setup.bash" >> /home/$user/.bashrc
 				source /home/$user/.bashrc
 				echo "配置完成"
