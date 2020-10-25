@@ -44,6 +44,7 @@ EOF
 				else
 					echo "版本不支持，请手动安装"
 					exit
+				fi
 				apt install -y vim net-tools openssh-server ros-$ROS_Edition-desktop-full >/dev/null 2>&1
 				#SHELL_FOLDER=$(dirname $(readlink -f "$0"))
 				#user_test=$(sed "s:/: :g" $SHELL_FOLDER | awk '{print $2}')
