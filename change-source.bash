@@ -32,15 +32,16 @@ EOF
 		if [ "$confirm" = "y" ];
 			then 
 				echo -e "请继续耐心等待"
-				echo "deb https://mirrors.tuna.tsinghua.edu.cn/ros/ubuntu/ $ubuntu_edition main" > /etc/apt/sources.list.d/ros-latest.list
-				apt-key adv --keyserver 'hkp://keyserver.ubuntu.com:80' --recv-key C1CF6E31E6BADE8868B172B4F42ED6FBAB17C654 >/dev/null 2>&1
-				apt update >/dev/null 2>&1
+				#echo "deb https://mirrors.tuna.tsinghua.edu.cn/ros/ubuntu/ $ubuntu_edition main" > /etc/apt/sources.list.d/ros-latest.list
+				#apt-key adv --keyserver 'hkp://keyserver.ubuntu.com:80' --recv-key C1CF6E31E6BADE8868B172B4F42ED6FBAB17C654 >/dev/null 2>&1
+				#apt update >/dev/null 2>&1
 				if [ "$ubuntu_edition" = "xenial" ];then
-					$ROS_Edition = “kinetic”
+					ROS_Edition = “kinetic”
 				elif [ "$ubuntu_edition" = "bionic" ];then
-					$ROS_Edition = “melodic”
+					ROS_Edition = “melodic”
 				elif [ "$ubuntu_edition" = "focal" ];then
-					$ROS_Edition = “noetic”
+					ROS_Edition = “noetic”
+					echo $ROS_Edition
 				else
 					echo "版本不支持，请手动安装"
 					exit
