@@ -33,8 +33,8 @@ EOF
 			then 
 				echo -e "请继续耐心等待"
 				echo "deb https://mirrors.tuna.tsinghua.edu.cn/ros/ubuntu/ $ubuntu_edition main" > /etc/apt/sources.list.d/ros-latest.list
-				#apt-key adv --keyserver 'hkp://keyserver.ubuntu.com:80' --recv-key C1CF6E31E6BADE8868B172B4F42ED6FBAB17C654 >/dev/null 2>&1
-				#apt update >/dev/null 2>&1
+				apt-key adv --keyserver 'hkp://keyserver.ubuntu.com:80' --recv-key C1CF6E31E6BADE8868B172B4F42ED6FBAB17C654 >/dev/null 2>&1
+				apt update >/dev/null 2>&1
 				apt install -y vim net-tools openssh-server ros-$ubuntu_edition-desktop-full >/dev/null 2>&1
 				#SHELL_FOLDER=$(dirname $(readlink -f "$0"))
 				#user_test=$(sed "s:/: :g" $SHELL_FOLDER | awk '{print $2}')
