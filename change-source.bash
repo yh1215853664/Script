@@ -39,7 +39,7 @@ EOF
 					ROS_Edition = “kinetic”
 				elif [ " $ubuntu_edition" = "bionic" ];then
 					ROS_Edition = “melodic”
-				elif [ " $ubuntu_edition" = "focal" ];the
+				elif [ " $ubuntu_edition" = "focal" ];then
 					ROS_Edition = “noetic”
 				else
 					echo "版本不支持，请手动安装"
