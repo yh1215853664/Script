@@ -40,8 +40,7 @@ EOF
 				#user_test=$(sed "s:/: :g" $SHELL_FOLDER | awk '{print $2}')
 				user=$(cat /etc/passwd | grep "/bin/bash" | cut -d: -f1 | tail -1)
 				#if [$user_test == $user ];then
-				mkdir -p /home/$user/catkin_ws/src;cd /home/$user/catkin_ws/
-				cd /home/$user/catkin_ws;catkin_make >/dev/null 2>&1
+				mkdir -p /home/$user/catkin_ws/src;cd /home/$user/catkin_ws/;catkin_make >/dev/null 2>&1
 				echo "source /opt/ros/$ubuntu_edition/setup.bash" >> /home/$user/.bashrc
 				echo "source /home/$user/catkin_ws/devel/setup.bash" >> /home/$user/.bashrc
 				source /home/$user/.bashrc
