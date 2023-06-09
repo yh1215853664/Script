@@ -90,9 +90,10 @@ cat>gpx_wpt.fmt<<EOF
 EOF
 
 /usr/local/exiftool/exiftool -ee3 -api largefilesupport -p gpx.fmt $name > tmpfile
-cat tmpfile | uniq > $file_gps
-rm -rf tmpfile gpx.fmt
 /usr/local/exiftool/exiftool -ee3 -api largefilesupport -p gpx_wpt.fmt $name > $file_gpx
+cat tmpfile | uniq > $file_gps
+rm -rf tmpfile gpx.fmt $file_gpx
+
 
 mkdir -p ../图像/$year_month_day$slipt$hour_minute_second
 ffmpeg -i $name_mp4 -f image2 -q:v 1 -r 1 ../图像/$year_month_day$slipt$hour_minute_second/%d.jpg
@@ -108,4 +109,5 @@ do
 done
 rm -rf ../图像/$year_month_day$slipt$hour_minute_second/*.jpg_original
 mv $file_gps ../结果/.
+mv $file_gpx ../结果/.
 done
