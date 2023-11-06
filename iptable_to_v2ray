@@ -1,0 +1,46 @@
+#一个#代表一级注释，两个#代表二级注释
+
+# 设置策略路由
+ip rule add fwmark 1 table 100
+ip route add local 0.0.0.0/0 dev lo table 100
+# 代理局域网设备
+iptables -t mangle -N V2RAY
+iptables -t mangle -A V2RAY -d 127.0.0.1/8 -j RETURN
+iptables -t mangle -A V2RAY -d 224.0.0.0/4 -j RETURN
+iptables -t mangle -A V2RAY -d 255.255.255.255/32 -j RETURN
+##直连局域网
+##因为v2ray作为网关，局域网设备不发往v2ray处理。
+##添加所有不希望走v2ray流量的局域网设备，同时避免 V2Ray 无法启动时无法直连。
+##添加TCP直连，UDP53端口不添加，只给本网段添加
+
+##TCP
+iptables -t mangle -A V2RAY -d 10.202.0.0/24 -p tcp -j RETURN
+iptables -t mangle -A V2RAY -d 10.202.1.0/24 -p tcp -j RETURN
+iptables -t mangle -A V2RAY -d 192.168.202.0/24 -p tcp -j RETURN
+##UDP 53
+iptables -t mangle -A V2RAY -d 10.202.1.0/24 -p udp ! --dport 53 -j RETURN
+##其余流量打标，给 UDP及TCP打标记 1，转发至 12345 端口
+iptables -t mangle -A V2RAY -p udp -j TPROXY --on-port 12345 --tproxy-mark 1
+iptables -t mangle -A V2RAY -p tcp -j TPROXY --on-port 12345 --tproxy-mark 1
+
+# 代理网关本机
+iptables -t mangle -N V2RAY_MASK
+iptables -t mangle -A V2RAY_MASK -d 127.0.0.1/8 -j RETURN
+iptables -t mangle -A V2RAY_MASK -d 224.0.0.0/4 -j RETURN
+iptables -t mangle -A V2RAY_MASK -d 255.255.255.255/32 -j RETURN
+##直连局域网，与V2RAY链相同。
+##TCP
+iptables -t mangle -A V2RAY_MASK -d 10.202.0.0/24 -p tcp -j RETURN
+iptables -t mangle -A V2RAY_MASK -d 10.202.1.0/24 -p tcp -j RETURN
+iptables -t mangle -A V2RAY_MASK -d 192.168.202.0/24 -p tcp -j RETURN
+##UDP
+iptables -t mangle -A V2RAY_MASK -d 10.202.1.0/24 -p udp ! --dport 53 -j RETURN
+##直连 SO_MARK 为 0xff 的流量(0xff 是 16 进制数，数值上等同与上面V2Ray 配置的 255)，此规则目的是避免代理本机(网关)流量出现回环问题
+iptables -t mangle -A V2RAY_MASK -j RETURN -m mark --mark 0xff
+##其余流量打标,重路由
+iptables -t mangle -A V2RAY_MASK -p udp -j MARK --set-mark 1
+iptables -t mangle -A V2RAY_MASK -p tcp -j MARK --set-mark 1
+
+#规则应用
+iptables -t mangle -A PREROUTING -j V2RAY
+iptables -t mangle -A OUTPUT -j V2RAY_MASK                         
