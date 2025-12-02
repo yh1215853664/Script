@@ -1,46 +1,84 @@
-#一个#代表一级注释，两个#代表二级注释
+# 允许转发来自VPN网络的流量
+iptables -t nat -A POSTROUTING -s 172.16.0.0/12 -o ens33 -j MASQUERADE
+iptables -A FORWARD -s 172.16.0.0/12 -j ACCEPT
+iptables -A FORWARD -m state --state RELATED,ESTABLISHED -j ACCEPT
+# 设置策略路由(科学上网相关)
+iptables -t mangle -N V2RAY
+iptables -t mangle -N V2RAY_MASK
+#V2RAY链 链接PREROUTING V2RAY_MASK链接OUTPUT链
+#流量经V2RAY链流入 从V2RAY链流出
+iptables -t mangle -A PREROUTING -j V2RAY
+iptables -t mangle -A OUTPUT -j V2RAY_MASK
 
-# 设置策略路由
 ip rule add fwmark 1 table 100
 ip route add local 0.0.0.0/0 dev lo table 100
 # 代理局域网设备
-iptables -t mangle -N V2RAY
 iptables -t mangle -A V2RAY -d 127.0.0.1/8 -j RETURN
 iptables -t mangle -A V2RAY -d 224.0.0.0/4 -j RETURN
 iptables -t mangle -A V2RAY -d 255.255.255.255/32 -j RETURN
+
+#直连OPENVPN的服务端口 因iptables匹配规则是从上向下匹配 所以放行规则要位于确保能匹配得到
+#如果下面的网段的规则在先 由于网关IP同样处于10.202.1.0/24的范围内 则不会匹配到openvpn这条规则
+#V2RAY_MASK链中的处理方式相同
+#直连目的端口为11949的流量
+#这步其实就是一个简单的端口映射 路由做了21949-11949的映射，由于内网流量被网关拦截，这一步将11949的流量放行
+iptables -t mangle -A V2RAY -p tcp --dport 11949 -j RETURN
+iptables -t mangle -A V2RAY -p udp --dport 11949 -j RETURN
+
 ##直连局域网
 ##因为v2ray作为网关，局域网设备不发往v2ray处理。
 ##添加所有不希望走v2ray流量的局域网设备，同时避免 V2Ray 无法启动时无法直连。
 ##添加TCP直连，UDP53端口不添加，只给本网段添加
 
 ##TCP
-iptables -t mangle -A V2RAY -d 10.202.0.0/24 -p tcp -j RETURN
-iptables -t mangle -A V2RAY -d 10.202.1.0/24 -p tcp -j RETURN
-iptables -t mangle -A V2RAY -d 192.168.202.0/24 -p tcp -j RETURN
+iptables -t mangle -A V2RAY -d 10.0.0.0/8 -p tcp -j RETURN
 ##UDP 53
-iptables -t mangle -A V2RAY -d 10.202.1.0/24 -p udp ! --dport 53 -j RETURN
+iptables -t mangle -A V2RAY -d 10.0.0.0/8 -p udp ! --dport 53 -j RETURN
+iptables -t mangle -A V2RAY -d 172.16.0.0/12 -p tcp -j RETURN
+iptables -t mangle -A V2RAY -d 172.16.0.0/12 -p udp ! --dport 53 -j RETURN
+iptables -t mangle -A V2RAY -d 192.168.0.0/16 -p tcp -j RETURN
+iptables -t mangle -A V2RAY -d 192.168.0.0/16 -p udp ! --dport 53 -j RETURN
+
+
+
+# 直连 SO_MARK 为 0xff 的流量(0xff 是 16 进制数，数值上等同与上面V2Ray 配置的 255)，此规则目的是解决v2ray占用大量CPU（https://github.com/v2ray/v2ray-core/issues/2621
+#v2ray配置文件中inbounds/transparent/streamSettings/sockopt/mask 定义的数值
+iptables -t mangle -A V2RAY -j RETURN -m mark --mark 0xff
 ##其余流量打标，给 UDP及TCP打标记 1，转发至 12345 端口
-iptables -t mangle -A V2RAY -p udp -j TPROXY --on-port 12345 --tproxy-mark 1
-iptables -t mangle -A V2RAY -p tcp -j TPROXY --on-port 12345 --tproxy-mark 1
+#v2ray配置文件中inbounds/port 定义的端口号
+iptables -t mangle -A V2RAY -p udp -j TPROXY --on-ip 127.0.0.1 --on-port 12345 --tproxy-mark 1
+iptables -t mangle -A V2RAY -p tcp -j TPROXY --on-ip 127.0.0.1 --on-port 12345 --tproxy-mark 1
 
 # 代理网关本机
-iptables -t mangle -N V2RAY_MASK
 iptables -t mangle -A V2RAY_MASK -d 127.0.0.1/8 -j RETURN
 iptables -t mangle -A V2RAY_MASK -d 224.0.0.0/4 -j RETURN
 iptables -t mangle -A V2RAY_MASK -d 255.255.255.255/32 -j RETURN
+##直连来源端口为11949的流量 openvpn服务端口
+iptables -t mangle -A V2RAY_MASK -p tcp --sport 11949 -j RETURN
+iptables -t mangle -A V2RAY_MASK -p udp --sport 11949 -j RETURN
+
+
 ##直连局域网，与V2RAY链相同。
-##TCP
-iptables -t mangle -A V2RAY_MASK -d 10.202.0.0/24 -p tcp -j RETURN
-iptables -t mangle -A V2RAY_MASK -d 10.202.1.0/24 -p tcp -j RETURN
-iptables -t mangle -A V2RAY_MASK -d 192.168.202.0/24 -p tcp -j RETURN
-##UDP
-iptables -t mangle -A V2RAY_MASK -d 10.202.1.0/24 -p udp ! --dport 53 -j RETURN
-##直连 SO_MARK 为 0xff 的流量(0xff 是 16 进制数，数值上等同与上面V2Ray 配置的 255)，此规则目的是避免代理本机(网关)流量出现回环问题
+#TCP
+iptables -t mangle -A V2RAY_MASK -d 10.0.0.0/8 -p tcp -j RETURN
+
+#UDP
+iptables -t mangle -A V2RAY_MASK -d 10.0.0.0/8 -p udp ! --dport 53 -j RETURN
+iptables -t mangle -A V2RAY_MASK -d 172.16.0.0/12 -p tcp -j RETURN
+iptables -t mangle -A V2RAY_MASK -d 172.16.0.0/12 -p udp ! --dport 53 -j RETURN
+iptables -t mangle -A V2RAY_MASK -d 192.168.0.0/16 -p tcp -j RETURN
+iptables -t mangle -A V2RAY_MASK -d 192.168.0.0/16 -p udp ! --dport 53 -j RETURN
+
+#直连 SO_MARK 为 0xff 的流量(0xff 是 16 进制数，数值上等同与上面V2Ray 配置的 255)，此规则目的是避免代理本机(网关)流量出现回环问题
 iptables -t mangle -A V2RAY_MASK -j RETURN -m mark --mark 0xff
 ##其余流量打标,重路由
 iptables -t mangle -A V2RAY_MASK -p udp -j MARK --set-mark 1
 iptables -t mangle -A V2RAY_MASK -p tcp -j MARK --set-mark 1
 
-#规则应用
-iptables -t mangle -A PREROUTING -j V2RAY
-iptables -t mangle -A OUTPUT -j V2RAY_MASK                         
+# 新建 DIVERT 规则，避免已有连接的包二次通过 TPROXY，理论上有一定的性能提升
+#iptables -t mangle -N DIVERT
+#iptables -t mangle -A DIVERT -j MARK --set-mark 1
+#iptables -t mangle -A DIVERT -j ACCEPT
+#iptables -t mangle -I PREROUTING -p tcp -m socket -j DIVERT
+
+systemctl start v2ray.service
