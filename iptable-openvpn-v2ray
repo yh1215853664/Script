@@ -24,6 +24,10 @@ iptables -t mangle -A V2RAY -d 255.255.255.255/32 -j RETURN
 #这步其实就是一个简单的端口映射 路由做了21949-11949的映射，由于内网流量被网关拦截，这一步将11949的流量放行
 iptables -t mangle -A V2RAY -p tcp --dport 11949 -j RETURN
 iptables -t mangle -A V2RAY -p udp --dport 11949 -j RETURN
+#以下为测试时留用,放行10.202.1.11上的Geoserver8080端口,指定来源地址10.202.1.11,源端口8080放行
+#iptables -t mangle -A V2RAY_MASK -p tcp --sport 8080 -s 10.202.1.11 -j RETURN
+#iptables -t mangle -A V2RAY_MASK -p udp --sport 8080 -s 10.202.1.11 -j RETURN
+
 
 ##直连局域网
 ##因为v2ray作为网关，局域网设备不发往v2ray处理。
@@ -54,8 +58,12 @@ iptables -t mangle -A V2RAY_MASK -d 127.0.0.1/8 -j RETURN
 iptables -t mangle -A V2RAY_MASK -d 224.0.0.0/4 -j RETURN
 iptables -t mangle -A V2RAY_MASK -d 255.255.255.255/32 -j RETURN
 ##直连来源端口为11949的流量 openvpn服务端口
+#这步其实就是一个简单的端口映射 路由做了21949-11949的映射，由于内网流量被网关拦截，这一步将11949的流量放行
 iptables -t mangle -A V2RAY_MASK -p tcp --sport 11949 -j RETURN
 iptables -t mangle -A V2RAY_MASK -p udp --sport 11949 -j RETURN
+#以下为测试时留用,放行10.202.1.11上的Geoserver8080端口,指定来源地址10.202.1.11,源端口8080放行
+#iptables -t mangle -A V2RAY_MASK -p tcp --sport 8080 -s 10.202.1.11 -j RETURN
+#iptables -t mangle -A V2RAY_MASK -p udp --sport 8080 -s 10.202.1.11 -j RETURN
 
 
 ##直连局域网，与V2RAY链相同。
